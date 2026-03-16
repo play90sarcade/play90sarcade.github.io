@@ -162,6 +162,7 @@
       if (livesEl) livesEl.textContent = lives;
       if (lives <= 0) { gameOver(); return; }
       running = false;
+      if (anim) { cancelAnimationFrame(anim); anim = null; }
       if (retryLivesEl) retryLivesEl.textContent = lives;
       if (retryOverlay) retryOverlay.classList.remove('hidden');
       draw();
@@ -209,6 +210,7 @@
   function retryRound() {
     if (!retryOverlay || retryOverlay.classList.contains('hidden')) return;
     retryOverlay.classList.add('hidden');
+    if (anim) { cancelAnimationFrame(anim); anim = null; }
     if (typeof window.speakRestart === 'function') window.speakRestart();
     resetBall();
     running = true;
@@ -242,6 +244,7 @@
   }
 
   function startGame() {
+    if (anim) { cancelAnimationFrame(anim); anim = null; }
     initBricks();
     score = 0;
     lives = 3;
