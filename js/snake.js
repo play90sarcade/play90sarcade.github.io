@@ -286,6 +286,10 @@
   }
 
   function startGame() {
+    if (gameLoop) {
+      clearInterval(gameLoop);
+      gameLoop = null;
+    }
     var cy = Math.floor(GRID_SIZE / 2);
     snake = [
       { x: 5, y: cy },
