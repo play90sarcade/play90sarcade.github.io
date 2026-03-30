@@ -28,11 +28,13 @@
   const playAgainBtn = document.getElementById('playAgainBtn');
   const newHighScoreBanner = document.getElementById('newHighScoreBanner');
 
-  const BASE_SPEED = 5;
-  const SPEED_PER_LEVEL = 0.9;
+  /* Level 1 is slow / easy; speed ramps gently each level */
+  const BASE_SPEED_L1 = 3.5;
+  const SPEED_PER_LEVEL = 0.55;
+  const MAX_BALL_SPEED = 12.5;
 
   let paddleX = W / 2 - PADDLE_W / 2, paddleY = H - 36;
-  let ballX = W / 2, ballY = H - 58, ballDX = BASE_SPEED, ballDY = -BASE_SPEED;
+  let ballX = W / 2, ballY = H - 58, ballDX = BASE_SPEED_L1, ballDY = -BASE_SPEED_L1;
   let bricks = [];
   let score = 0, lives = 3, level = 1;
   let running = false, anim = null, levelUpUntil = 0;
@@ -64,21 +66,30 @@
     return STAGE_PALETTES[idx];
   }
 
+  /** Fewer rows on early levels = faster clears, easier start */
+  function getBrickRowCount() {
+    return Math.min(BRICK_ROWS, 3 + Math.min(level, 5));
+  }
+
   function initBricks() {
     bricks = [];
     var pal = getStagePalette();
-    /* Unified: all bricks use the same stage palette (main/alt by row for slight variety) */
+    var rowsActive = getBrickRowCount();
     for (var r = 0; r < BRICK_ROWS; r++) {
       bricks[r] = [];
       for (var c = 0; c < BRICK_COLS; c++) {
-        bricks[r][c] = { alive: true, color: r % 2 === 0 ? pal.main : pal.alt };
+        if (r < rowsActive) {
+          bricks[r][c] = { alive: true, color: r % 2 === 0 ? pal.main : pal.alt };
+        } else {
+          bricks[r][c] = { alive: false, color: pal.main };
+        }
       }
     }
   }
 
   function getBallSpeed() {
-    var s = BASE_SPEED + (level - 1) * SPEED_PER_LEVEL;
-    return Math.min(s, 14);
+    var s = BASE_SPEED_L1 + (level - 1) * SPEED_PER_LEVEL;
+    return Math.min(s, MAX_BALL_SPEED);
   }
 
   function shadeColor(hex, amt) {
@@ -155,6 +166,60 @@
     if (!running) return;
     ballX += ballDX;
     ballY += ballDY;
+
+    /* Bricks first + penetration fix — stops ball stuck ping-ponging top wall vs ceiling row */
+    var brickHit = false;
+    for (var r = 0; r < bricks.length && !brickHit; r++) {
+      for (var c = 0; c < bricks[r].length && !brickHit; c++) {
+        if (!bricks[r][c].alive) continue;
+        var bx = 2 + c * (BRICK_W + 2) + BRICK_W / 2;
+        var by = 2 + r * (BRICK_H + 2) + BRICK_H / 2;
+        var halfW = BRICK_W / 2;
+        var halfH = BRICK_H / 2;
+        var brickLeft = bx - halfW;
+        var brickRight = bx + halfW;
+        var brickTop = by - halfH;
+        var brickBottom = by + halfH;
+        if (ballX + BALL_R <= brickLeft || ballX - BALL_R >= brickRight ||
+            ballY + BALL_R <= brickTop || ballY - BALL_R >= brickBottom) continue;
+
+        bricks[r][c].alive = false;
+        score += 10;
+        if (typeof window.playEatSound === 'function') window.playEatSound();
+        if (scoreEl) scoreEl.textContent = score;
+
+        var penL = ballX + BALL_R - brickLeft;
+        var penR = brickRight - (ballX - BALL_R);
+        var penT = ballY + BALL_R - brickTop;
+        var penB = brickBottom - (ballY - BALL_R);
+        var m = penT;
+        var side = 't';
+        if (penB < m) { m = penB; side = 'b'; }
+        if (penL < m) { m = penL; side = 'l'; }
+        if (penR < m) { m = penR; side = 'r'; }
+        if (side === 't') { ballY = brickTop - BALL_R - 0.5; ballDY *= -1; }
+        else if (side === 'b') { ballY = brickBottom + BALL_R + 0.5; ballDY *= -1; }
+        else if (side === 'l') { ballX = brickLeft - BALL_R - 0.5; ballDX *= -1; }
+        else { ballX = brickRight + BALL_R + 0.5; ballDX *= -1; }
+
+        brickHit = true;
+
+        var allDead = bricks.every(function(row) { return row.every(function(b) { return !b.alive; }); });
+        if (allDead) {
+          level++;
+          if (levelEl) levelEl.textContent = level;
+          if (typeof window.playEatSound === 'function') window.playEatSound();
+          if (typeof window.speakNextRound === 'function') window.speakNextRound();
+          initBricks();
+          resetBall();
+          running = false;
+          levelUpUntil = Date.now() + 600;
+          draw();
+          setTimeout(function() { levelUpUntil = 0; running = true; draw(); }, 600);
+        }
+      }
+    }
+
     if (ballX <= BALL_R || ballX >= W - BALL_R) ballDX *= -1;
     if (ballY <= BALL_R) ballDY *= -1;
     if (ballY >= H - BALL_R) {
@@ -177,32 +242,6 @@
       var minVert = speed * 0.35;
       if (Math.abs(ballDY) < minVert) ballDY = ballDY < 0 ? -minVert : minVert;
       if (typeof window.playButtonSound === 'function') window.playButtonSound();
-    }
-    for (var r = 0; r < bricks.length; r++) {
-      for (var c = 0; c < bricks[r].length; c++) {
-        if (!bricks[r][c].alive) continue;
-        var bx = 2 + c * (BRICK_W + 2) + BRICK_W/2, by = 2 + r * (BRICK_H + 2) + BRICK_H/2;
-        if (Math.abs(ballX - bx) < BRICK_W/2 + BALL_R && Math.abs(ballY - by) < BRICK_H/2 + BALL_R) {
-          bricks[r][c].alive = false;
-          score += 10;
-          ballDY *= -1;
-          if (typeof window.playEatSound === 'function') window.playEatSound();
-          if (scoreEl) scoreEl.textContent = score;
-          var allDead = bricks.every(function(row) { return row.every(function(b) { return !b.alive; }); });
-          if (allDead) {
-            level++;
-            if (levelEl) levelEl.textContent = level;
-            if (typeof window.playEatSound === 'function') window.playEatSound();
-            if (typeof window.speakNextRound === 'function') window.speakNextRound();
-            initBricks();
-            resetBall();
-            running = false;
-            levelUpUntil = Date.now() + 600;
-            draw();
-            setTimeout(function() { levelUpUntil = 0; running = true; draw(); }, 600);
-          }
-        }
-      }
     }
     draw();
   }

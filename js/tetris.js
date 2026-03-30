@@ -49,6 +49,12 @@
   let lines = 0;
   let gameLoop = null;
   let dropInterval = 1000;
+  /** Press-and-hold on canvas: fast soft-drop until lock (pointer = touch + mouse) */
+  let holdSoftInterval = null;
+  let holdingDrop = false;
+  let holdStartTimer = null;
+  let ptrDown = null;
+  let ptrSwipe = false;
 
   function getBest() {
     var raw = (typeof SecureLocalStorage !== 'undefined' && SecureLocalStorage.get(BEST_KEY)) ||
@@ -222,7 +228,53 @@
     ctx.restore();
   }
 
+  function clearHoldOnly() {
+    if (holdSoftInterval) {
+      clearInterval(holdSoftInterval);
+      holdSoftInterval = null;
+    }
+    holdingDrop = false;
+    if (holdStartTimer) {
+      clearTimeout(holdStartTimer);
+      holdStartTimer = null;
+    }
+  }
+
+  function endHoldSoftDrop() {
+    clearHoldOnly();
+    if (gameLoop) {
+      clearInterval(gameLoop);
+      gameLoop = null;
+    }
+    if (overlay && !overlay.classList.contains('hidden')) return;
+    if (piece) {
+      gameLoop = setInterval(tick, dropInterval);
+    }
+  }
+
+  function beginHoldSoftDrop() {
+    if (holdingDrop || !piece) return;
+    if (overlay && !overlay.classList.contains('hidden')) return;
+    holdingDrop = true;
+    if (gameLoop) {
+      clearInterval(gameLoop);
+      gameLoop = null;
+    }
+    function step() {
+      if (!piece) {
+        endHoldSoftDrop();
+        return;
+      }
+      score += level;
+      if (scoreEl) scoreEl.textContent = score;
+      tick();
+    }
+    step();
+    holdSoftInterval = setInterval(step, 42);
+  }
+
   function gameOver() {
+    clearHoldOnly();
     if (gameLoop) clearInterval(gameLoop);
     gameLoop = null;
     var oldBest = getBest();
@@ -243,6 +295,8 @@
   }
 
   function startGame() {
+    clearHoldOnly();
+    ptrDown = null;
     if (gameLoop) {
       clearInterval(gameLoop);
       gameLoop = null;
@@ -301,37 +355,85 @@
   if (bestEl) bestEl.textContent = getBest();
   window.__tetrisRestart = startGame;
 
-  /* Mobile: swipe on game canvas = move / rotate / soft drop */
-  var touchStart = null;
+  /* Canvas: swipe = move / rotate / one soft drop; press-and-hold = fast soft-drop until release (Pointer Events = mobile + desktop) */
   if (canvas) {
-    canvas.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1) return;
+    canvas.style.touchAction = 'none';
+    var HOLD_DELAY_MS = 220;
+    var SWIPE_MIN = 40;
+    var MOVE_CANCEL_HOLD = 28;
+
+    function cancelHoldArm() {
+      if (holdStartTimer) {
+        clearTimeout(holdStartTimer);
+        holdStartTimer = null;
+      }
+    }
+
+    canvas.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
       if (overlay && !overlay.classList.contains('hidden')) return;
-      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }, { passive: true });
-    canvas.addEventListener('touchmove', function (e) {
-      if (touchStart !== null && e.touches.length === 1) e.preventDefault();
+      cancelHoldArm();
+      ptrSwipe = false;
+      ptrDown = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      holdStartTimer = setTimeout(function () {
+        holdStartTimer = null;
+        if (!ptrDown || ptrSwipe) return;
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        beginHoldSoftDrop();
+      }, HOLD_DELAY_MS);
+    });
+
+    canvas.addEventListener('pointermove', function (e) {
+      if (!ptrDown || e.pointerId !== ptrDown.id) return;
+      var dx = e.clientX - ptrDown.x;
+      var dy = e.clientY - ptrDown.y;
+      if (dx * dx + dy * dy > MOVE_CANCEL_HOLD * MOVE_CANCEL_HOLD) {
+        ptrSwipe = true;
+        cancelHoldArm();
+      }
+      if (holdingDrop && e.cancelable) e.preventDefault();
     }, { passive: false });
-    canvas.addEventListener('touchcancel', function () { touchStart = null; });
-    canvas.addEventListener('touchend', function (e) {
-      if (!touchStart || e.changedTouches.length !== 1) return;
+
+    function finishPointer(e) {
+      if (!ptrDown || e.pointerId !== ptrDown.id) return;
+      cancelHoldArm();
+      if (holdingDrop) {
+        endHoldSoftDrop();
+        try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+        ptrDown = null;
+        return;
+      }
+      var dx = e.clientX - ptrDown.x;
+      var dy = e.clientY - ptrDown.y;
+      ptrDown = null;
       if (overlay && !overlay.classList.contains('hidden')) return;
-      var t = e.changedTouches[0];
-      var dx = t.clientX - touchStart.x;
-      var dy = t.clientY - touchStart.y;
-      touchStart = null;
-      var min = 40;
-      if (Math.abs(dx) >= min || Math.abs(dy) >= min) {
-        e.preventDefault();
+      if (Math.abs(dx) >= SWIPE_MIN || Math.abs(dy) >= SWIPE_MIN) {
         if (Math.abs(dx) > Math.abs(dy)) {
           if (dx > 0) move(1);
           else move(-1);
         } else {
           if (dy < 0) rotate();
-          else { if (piece) { score += level; if (scoreEl) scoreEl.textContent = score; } tick(); resetInterval(); }
+          else {
+            if (piece) {
+              score += level;
+              if (scoreEl) scoreEl.textContent = score;
+            }
+            tick();
+            resetInterval();
+          }
         }
       }
-    }, { passive: false });
+    }
+
+    canvas.addEventListener('pointerup', finishPointer);
+    canvas.addEventListener('pointercancel', function (e) {
+      cancelHoldArm();
+      if (holdingDrop) endHoldSoftDrop();
+      ptrDown = null;
+    });
+    canvas.addEventListener('lostpointercapture', function () {
+      if (holdingDrop) endHoldSoftDrop();
+    });
   }
 
   /* Start after canvas is laid out so pieces render reliably */

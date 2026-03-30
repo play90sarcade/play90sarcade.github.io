@@ -4,7 +4,25 @@
 (function () {
   'use strict';
 
-  const WORDS = ['ARCADE','SNAKE','TETRIS','NOKIA','GAMEBOY','CASSETTE','NINETIES','PIXEL','JOYSTICK','RETRO','HIGHSCORE','COIN','PLAYER'];
+  /* Tier 1: short, common · Tier 2: medium · Tier 3: longer / trickier (resets to 1 on loss) */
+  const WORDS_EASY = [
+    'CAT', 'DOG', 'SUN', 'MOON', 'STAR', 'TREE', 'BOOK', 'CAKE', 'FISH', 'BIRD', 'MILK', 'RAIN', 'SNOW', 'WIND', 'FIRE', 'WAVE',
+    'HAPPY', 'SMILE', 'DANCE', 'PIZZA', 'APPLE', 'HEART', 'CLOUD', 'OCEAN', 'RIVER', 'MUSIC', 'DREAM', 'MAGIC', 'LIGHT', 'PEACE',
+    'SUMMER', 'WINTER', 'SPRING', 'YELLOW', 'PURPLE', 'ORANGE', 'SILVER', 'GARDEN', 'CASTLE', 'DRAGON', 'ROCKET', 'PLANET', 'COMET'
+  ];
+  const WORDS_MEDIUM = [
+    'BANANA', 'COOKIE', 'PUZZLE', 'CIRCUS', 'CARNIVAL', 'VOLCANO', 'THUNDER', 'CRYSTAL', 'DIAMOND', 'RAINBOW', 'WHISPER', 'JOURNEY',
+    'MYSTERY', 'FOREST', 'DESERT', 'ISLAND', 'BRIDGE', 'TUNNEL', 'KNIGHT', 'WIZARD', 'PHOENIX', 'UNICORN', 'DOLPHIN',
+    'ELEPHANT', 'GIRAFFE', 'PENGUIN', 'OCTOPUS', 'BUTTERFLY', 'HARBOR', 'VINTAGE', 'NOSTALGIA', 'CHOCOLATE', 'ADVENTURE', 'TREASURE',
+    'CANYON', 'AURORA', 'METEOR', 'GALAXY', 'NEPTUNE', 'JUPITER', 'SATURN', 'ORBIT', 'COSMIC', 'STARDUST', 'LANTERN', 'FIREWORK'
+  ];
+  const WORDS_HARD = [
+    'EXTRAORDINARY', 'KALEIDOSCOPE', 'PHILOSOPHER', 'ARCHITECTURE', 'CHAMPIONSHIP', 'WISCONSIN', 'RHYTHM', 'MNEMONIC', 'XYLOPHONE',
+    'JAZZ', 'QUIZ', 'JINX', 'SPHINX', 'CRYPT', 'PHANTOM', 'LABYRINTH', 'OBSIDIAN', 'EMERALD', 'SAPPHIRE', 'AVALANCHE', 'HURRICANE',
+    'ELECTRICITY', 'TELESCOPE', 'MICROSCOPE', 'CHANDELIER', 'CATHEDRAL', 'PORCELAIN', 'ORCHESTRA', 'SYMPHONY', 'MAESTRO', 'VIRTUOSO',
+    'NEBULA', 'QUASAR', 'ECLIPSE', 'ZENITH', 'MERIDIAN', 'PARADOX', 'ENIGMA', 'RIDDLE', 'CONUNDRUM', 'WHIMSICAL', 'SERENDIPITY',
+    'MELODRAMA', 'CINEMATIC', 'BLOCKBUSTER', 'SCREENPLAY', 'NOSTALGIC', 'RETROGRADE', 'TIMELINE', 'DIMENSION', 'PARALLEL', 'INFINITY'
+  ];
   const BEST_KEY = 'hangmanBest';
   const MAX_WRONG = 6;
 
@@ -26,6 +44,7 @@
   const newHighScoreBanner = document.getElementById('newHighScoreBanner');
 
   let word = '', guessed = [], wrong = 0, wins = 0, round = 0, lastWord = '';
+  let wordTier = 1;
 
   function getBest() {
     var raw = (typeof SecureLocalStorage !== 'undefined' && SecureLocalStorage.get(BEST_KEY)) ||
@@ -70,10 +89,20 @@
     ctx.restore();
   }
 
+  function getWordPool(tier) {
+    if (tier >= 3) return WORDS_HARD;
+    if (tier === 2) return WORDS_MEDIUM;
+    return WORDS_EASY;
+  }
+
   function pickWord() {
+    var pool = getWordPool(wordTier);
     var w;
-    do { w = WORDS[Math.floor(Math.random() * WORDS.length)]; }
-    while (WORDS.length > 1 && w === lastWord);
+    var guard = 0;
+    do {
+      w = pool[Math.floor(Math.random() * pool.length)];
+      guard++;
+    } while (pool.length > 1 && w === lastWord && guard < 50);
     lastWord = w;
     return w;
   }
@@ -116,7 +145,9 @@
         if (typeof window.playEatSound === 'function') window.playEatSound();
       }
       if (typeof window.speakNextRound === 'function') window.speakNextRound();
+      wordTier = Math.min(3, wordTier + 1);
     } else {
+      wordTier = 1;
       if (typeof window.playGameOverSound === 'function') window.playGameOverSound();
       gameOverTitle.textContent = 'GAME OVER';
       gameOverMessage.textContent = 'Word was: ' + word;

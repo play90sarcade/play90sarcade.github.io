@@ -1,9 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+  if (location.hostname === "www.play90sarcade.fun") {
+    location.replace("https://play90sarcade.fun" + location.pathname + location.search + location.hash);
+  }
+  </script>
+  <script>
+  if (location.hostname === "rakeshkirupa.github.io") {
+    location.replace("https://play90sarcade.fun" + location.pathname + location.search + location.hash);
+  }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'self';">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <title>Terms of Use — Retro 90s Games</title>
@@ -32,9 +42,9 @@
   </div>
 
   <header class="site-header site-header-content">
-    <a href="index.html" class="logo">RETRO 90s GAMES</a>
+    <a href="/" class="logo">RETRO 90s GAMES</a>
     <nav>
-      <a href="index.html">Home</a>
+      <a href="/">Home</a>
       <a href="about.html">About</a>
       <a href="privacy-policy.html">Privacy Policy</a>
       <a href="contact.html">Contact</a>
@@ -68,7 +78,7 @@
 
   <footer class="site-footer site-footer-content">
     <nav>
-      <a href="index.html">Home</a>
+      <a href="/">Home</a>
       <a href="about.html">About</a>
       <a href="privacy-policy.html">Privacy Policy</a>
       <a href="contact.html">Contact</a>
@@ -76,5 +86,7 @@
     </nav>
     <p class="footer-tagline">Made for 90s kids who love classic games.</p>
   </footer>
+  <script src="js/sounds.js"></script>
+  <script src="js/ui-clicks.js"></script>
 </body>
 </html>

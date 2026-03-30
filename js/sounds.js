@@ -32,6 +32,23 @@
   }
 
   /**
+   * Menus / nav / game cards — light tick (distinct from in-game button beep)
+   */
+  function playUiClickSound() {
+    const ctx = getContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 520;
+    osc.type = 'triangle';
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.04);
+  }
+
+  /**
    * Tetris: line clear (satisfying blip)
    */
   function playLineClearSound() {
@@ -265,6 +282,7 @@
   });
 
   global.playButtonSound = playButtonSound;
+  global.playUiClickSound = playUiClickSound;
   global.playEatSound = playEatSound;
   global.playLineClearSound = playLineClearSound;
   global.playGameOverSound = playGameOverSound;

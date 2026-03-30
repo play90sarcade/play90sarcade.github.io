@@ -1,4 +1,6 @@
 User-agent: *
-Allow: /
+Disallow: /README.md
+Disallow: /SECURITY.md
+Disallow: /DEPLOY.md
 
 Sitemap: https://play90sarcade.fun/sitemap.xml
