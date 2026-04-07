@@ -2,14 +2,20 @@
 <html lang="en">
 <head>
   <script>
-  if (location.hostname === "www.play90sarcade.fun") {
-    location.replace("https://play90sarcade.fun" + location.pathname + location.search + location.hash);
-  }
-  </script>
-  <script>
-  if (location.hostname === "rakeshkirupa.github.io") {
-    location.replace("https://play90sarcade.fun" + location.pathname + location.search + location.hash);
-  }
+  (function () {
+    var host = location.hostname;
+    var path = location.pathname;
+    if (host === "www.play90sarcade.fun") {
+      location.replace("https://play90sarcade.fun" + path + location.search + location.hash);
+      return;
+    }
+    if (host === "rakeshkirupa.github.io") {
+      if (path.indexOf("/play90sarcade") === 0) {
+        path = path.slice("/play90sarcade".length) || "/";
+      }
+      location.replace("https://play90sarcade.fun" + path + location.search + location.hash);
+    }
+  })();
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
