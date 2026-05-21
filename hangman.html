@@ -1,23 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script>
-  (function () {
-    var host = location.hostname;
-    var path = location.pathname;
-    if (host === "www.play90sarcade.fun") {
-      location.replace("https://play90sarcade.fun" + path + location.search + location.hash);
-      return;
-    }
-    if (host === "rakeshkirupa.github.io") {
-      if (path.indexOf("/play90sarcade") === 0) {
-        path = path.slice("/play90sarcade".length) || "/";
-      }
-      location.replace("https://play90sarcade.fun" + path + location.search + location.hash);
-    }
-  })();
-  </script>
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; form-action 'self';">
   <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -28,9 +12,11 @@
   <meta name="robots" content="index, follow">
   <meta name="google-site-verification" content="BhGeknQwnLv2YkFp3bD-b8IEUH3cXCuux8lZY7yZT6o" />
   <link rel="canonical" href="https://play90sarcade.fun/hangman.html">
+  <meta property="og:type" content="website">
   <meta property="og:title" content="Hangman Game — Retro 90s Games">
   <meta property="og:description" content="Play Hangman online. Free word game in your browser.">
   <meta property="og:url" content="https://play90sarcade.fun/hangman.html">
+  <meta property="og:image" content="https://play90sarcade.fun/favicon.png">
   <meta name="theme-color" content="#0f0f1a">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
@@ -38,6 +24,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Hangman Game","url":"https://play90sarcade.fun/hangman.html","applicationCategory":"Game","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+  </script>
 </head>
 <body class="snake-page game-page site-has-footer" data-game="Hangman">
   <div class="bg-animations" aria-hidden="true">
